@@ -24,6 +24,44 @@ resource "aws_kms_alias" "datalake" {
   target_key_id = aws_kms_key.datalake.key_id
 }
 
+resource "aws_kms_key_policy" "datalake" {
+  key_id = aws_kms_key.datalake.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowS3"
+        Effect    = "Allow"
+        Principal = { Service = "s3.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid       = "AllowGlue"
+        Effect    = "Allow"
+        Principal = { Service = "glue.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 ###############################################################################
 # S3 Bucket for Data Lake Storage
 ###############################################################################
