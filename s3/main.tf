@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 locals {
   common_tags = merge(var.tags, {
     Environment = var.environment
@@ -23,6 +25,35 @@ resource "aws_kms_alias" "this" {
 
   name          = "alias/${var.name}-s3"
   target_key_id = aws_kms_key.this[0].key_id
+}
+
+resource "aws_kms_key_policy" "this" {
+  count  = var.enable_kms_encryption ? 1 : 0
+  key_id = aws_kms_key.this[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowS3"
+        Effect    = "Allow"
+        Principal = { Service = "s3.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 ###############################################################################
