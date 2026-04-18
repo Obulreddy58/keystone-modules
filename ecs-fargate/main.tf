@@ -100,7 +100,11 @@ resource "aws_iam_role_policy" "execution_secrets" {
         "ssm:GetParameters",
         "kms:Decrypt"
       ]
-      Resource = "*"
+      Resource = [
+        "arn:aws:secretsmanager:*:${local.account_id}:secret:*",
+        "arn:aws:ssm:*:${local.account_id}:parameter/*",
+        "arn:aws:kms:*:${local.account_id}:key/*"
+      ]
     }]
   })
 }
