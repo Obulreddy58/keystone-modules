@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 data "aws_partition" "current" {}
 
 locals {
@@ -21,6 +23,36 @@ resource "aws_kms_key" "msk" {
 resource "aws_kms_alias" "msk" {
   name          = "alias/${var.name}-msk"
   target_key_id = aws_kms_key.msk.key_id
+}
+
+resource "aws_kms_key_policy" "msk" {
+  key_id = aws_kms_key.msk.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowKafka"
+        Effect    = "Allow"
+        Principal = { Service = "kafka.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey*",
+          "kms:ReEncrypt*",
+          "kms:CreateGrant"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 ###############################################################################
