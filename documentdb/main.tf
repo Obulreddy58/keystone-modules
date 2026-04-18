@@ -27,6 +27,47 @@ resource "aws_kms_alias" "docdb" {
   target_key_id = aws_kms_key.docdb.key_id
 }
 
+resource "aws_kms_key_policy" "docdb" {
+  key_id = aws_kms_key.docdb.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowRDS"
+        Effect    = "Allow"
+        Principal = { Service = "rds.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey*",
+          "kms:ReEncrypt*",
+          "kms:CreateGrant"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid       = "AllowSecretsManager"
+        Effect    = "Allow"
+        Principal = { Service = "secretsmanager.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 ###############################################################################
 # Security Group
 ###############################################################################
