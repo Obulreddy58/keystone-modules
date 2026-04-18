@@ -59,9 +59,30 @@ resource "aws_iam_role_policy" "lf_s3_access" {
         Resource = flatten([for arn in var.s3_locations : [arn, "${arn}/*"]])
       },
       {
-        Effect   = "Allow"
-        Action   = ["glue:*Database*", "glue:*Table*", "glue:*Partition*"]
-        Resource = ["*"]
+        Effect = "Allow"
+        Action = [
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:CreateDatabase",
+          "glue:UpdateDatabase",
+          "glue:DeleteDatabase",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:CreateTable",
+          "glue:UpdateTable",
+          "glue:DeleteTable",
+          "glue:GetPartition",
+          "glue:GetPartitions",
+          "glue:CreatePartition",
+          "glue:BatchCreatePartition",
+          "glue:DeletePartition",
+          "glue:BatchDeletePartition"
+        ]
+        Resource = [
+          "arn:aws:glue:*:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:*:${data.aws_caller_identity.current.account_id}:database/*",
+          "arn:aws:glue:*:${data.aws_caller_identity.current.account_id}:table/*/*"
+        ]
       }
     ]
   })
