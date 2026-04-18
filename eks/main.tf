@@ -33,6 +33,37 @@ resource "aws_kms_alias" "eks" {
   target_key_id = aws_kms_key.eks[0].key_id
 }
 
+resource "aws_kms_key_policy" "eks" {
+  count  = var.enable_cluster_encryption ? 1 : 0
+  key_id = aws_kms_key.eks[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${local.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowEKS"
+        Effect    = "Allow"
+        Principal = { Service = "eks.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey*",
+          "kms:ReEncrypt*",
+          "kms:CreateGrant"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 ###############################################################################
 # EKS Cluster IAM Role
 ###############################################################################
